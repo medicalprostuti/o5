@@ -1,0 +1,1273 @@
+<!DOCTYPE html>
+<html lang="bn">
+  <head>
+    <script>
+      document.addEventListener("contextmenu", (event) =>
+        event.preventDefault()
+      );
+      document.addEventListener("keydown", (event) => {
+        if (
+          (event.ctrlKey &&
+            ["u", "s", "i", "j"].includes(event.key.toLowerCase())) ||
+          event.key === "F12"
+        ) {
+          event.preventDefault();
+        }
+      });
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Exam</title>
+    <!-- Chart.js CDN -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap");
+
+      body {
+        font-family: "Hind Siliguri", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        font-family: "Hind Siliguri", sans-serif;
+        width: 100%;
+        margin: auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        min-height: 80vh;
+      }
+
+      .exam-content {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h1 {
+        color: #1b0b54;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      #timer {
+        font-size: 20px;
+        color: #1b0b54;
+        margin-bottom: 5px;
+        font-weight: normal;
+        text-align: center;
+      }
+
+      #exam-info {
+        font-size: 16px;
+        color: black;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      #exam {
+        width: 100%;
+        min-height: 100px;
+      }
+
+      .chart-container {
+        width: 200px;
+        height: 200px;
+        margin: 10px auto;
+        background-color: #f9f9f9;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: none;
+        padding: 10px;
+      }
+
+      .chart-container.visible {
+        display: block;
+      }
+
+      .question-container {
+        text-align: left;
+        margin-bottom: 20px;
+        display: block;
+      }
+
+      .question-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+      }
+
+      .options {
+        margin-top: 10px;
+      }
+
+      .option {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        text-transform: uppercase;
+      }
+
+      .circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #1b0b54;
+        margin-right: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #1b0b54;
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      .selected .circle {
+        background-color: #1b0b54;
+        color: white;
+      }
+
+      .correct-text {
+        color: green !important;
+      }
+
+      .incorrect-text {
+        color: #ff0800 !important;
+      }
+
+      .unattempted-text {
+        color: orange !important;
+      }
+
+      #submitBtn {
+        font-family: hind siliguri;
+        padding: 15px 30px;
+        background-color: #1b0b54;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 10px;
+        margin-top: 20px;
+        width: 200px;
+        transition: background-color 0.3s ease;
+      }
+
+      #submitBtn:hover {
+        background-color: #1b0b54;
+      }
+
+      .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        width: 300px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        text-align: center;
+        display: none;
+        z-index: 1000;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+      }
+
+      .popup.slide-out {
+        transform: translate(-50%, -100%);
+        opacity: 0;
+      }
+
+      .popup-header {
+        background-color: #1b0b54;
+        color: white;
+        padding: 10px;
+        font-size: 20px;
+        font-weight: bold;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .popup-body {
+        padding: 15px;
+      }
+
+      .popup-body p {
+        margin: 10px 0;
+      }
+
+      .confirm-btn {
+        font-family: hind siliguri;
+        background-color: #34c759;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .confirm-btn:hover {
+        background-color: #34c759;
+      }
+
+      .cancel-btn {
+        background-color: #ff3b30;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .cancel-btn:hover {
+        background-color: #e02b21;
+      }
+
+      .explanation-dropdown {
+        display: none;
+        margin-top: 10px;
+      }
+
+      .explanation-dropdown.visible {
+        display: block;
+      }
+
+      .explanation-btn {
+        background-color: #1b0b54;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-family: "Hind Siliguri", sans-serif;
+        width: 40%;
+        text-align: left;
+        position: relative;
+      }
+
+      .explanation-btn:hover {
+        background-color: #1b0b54;
+      }
+
+      .explanation-btn::after {
+        content: "▼";
+        position: absolute;
+        right: 10px;
+        font-size: 12px;
+      }
+
+      .explanation-btn.active::after {
+        content: "▲";
+      }
+
+      .explanation-content {
+        display: none;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        color: #000000;
+        text-align: left;
+        max-height: 450px;
+        overflow-y: auto;
+        margin-top: 5px;
+      }
+
+      .explanation-content.visible {
+        display: block;
+      }
+
+      .explanation-content p {
+        margin: 0 0 10px 0;
+      }
+
+      .explanation-content ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .explanation-content li {
+        margin-bottom: 5px;
+      }
+
+      .explanation-content strong {
+        color: #1b0b54;
+      }
+
+      .explanation-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .locked .option {
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .locked .option.selected {
+        pointer-events: none;
+        cursor: default;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container" id="examContainer">
+      <div class="exam-content">
+        <h1>কেমিস্ট্রি ২য় অনুশীলন</h1>
+        <div id="timer"></div>
+        <div id="exam-info"></div>
+        <div class="chart-container">
+          <canvas id="scoreChart"></canvas>
+        </div>
+        <div id="exam">
+          <!-- Questions will be generated dynamically -->
+        </div>
+        <button id="submitBtn">সাবমিট</button>
+      </div>
+    </div>
+
+    <div class="popup" id="scorePopup">
+      <div class="popup-header">তোমার স্কোর</div>
+      <div class="popup-body">
+        <p><strong>মোট প্রশ্ন:</strong> <span id="totalQuestions"></span></p>
+        <p>
+          <strong>উত্তর দিয়েছো:</strong>
+          <span style="color: #000000" id="answered"></span>
+        </p>
+        <p>
+          <strong>সঠিক উত্তর:</strong>
+          <span style="color: #0ab853" id="correctAnswers"></span>
+        </p>
+        <p>
+          <strong>ভুল উত্তর:</strong>
+          <span style="color: #f81010" id="wrongAnswers"></span>
+        </p>
+        <p>
+          <strong>অনুত্তরিত:</strong>
+          <span style="color: #ffc801" id="unanswered"></span>
+        </p>
+        <p><strong>তোমার চূড়ান্ত স্কোর:</strong></p>
+        <h2 style="color: #1b0b54"><span id="finalScore"></span></h2>
+        <form id="scoreForm" action="https://formspree.io/f/xpby" method="POST">
+          <input type="hidden" name="userID" id="formUserID" />
+          <input type="hidden" name="finalScore" id="formFinalScore" />
+          <input type="hidden" name="correctAnswers" id="formCorrectAnswers" />
+          <input type="hidden" name="wrongAnswers" id="formWrongAnswers" />
+          <input type="hidden" name="unanswered" id="formUnanswered" />
+          <button
+            type="submit"
+            class="confirm-btn"
+            style="background-color: #1b0b54"
+          >
+            <b>ওকে</b>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="popup" id="confirmPopup">
+      <div class="popup-header">কনফার্ম করো</div>
+      <div class="popup-body">
+        <p>
+          ভালো করে দেখে নাও! <br />
+          পরীক্ষা শেষ করতে চাও তো?
+        </p>
+        <button class="confirm-btn" onclick="confirmSubmit()">
+          <b>হ্যাঁ</b>
+        </button>
+        <button class="cancel-btn" onclick="cancelSubmit()"><b>না</b></button>
+      </div>
+    </div>
+
+    <script>
+      let chartInstance = null;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded and parsed");
+        const examContainer = document.getElementById("examContainer");
+        if (!examContainer) {
+          console.error("Exam container not found!");
+          return;
+        }
+        try {
+          sessionStorage.setItem("isLoggedIn", "true");
+          sessionStorage.setItem("userID", "anonymous");
+          console.log(
+            "Session storage set: isLoggedIn = true, userID = anonymous"
+          );
+        } catch (e) {
+          console.error("Session storage error:", e);
+        }
+        examContainer.style.display = "block";
+        console.log("Exam container displayed");
+        startTimer();
+        generateQuestions();
+
+        window.addEventListener("beforeunload", function (event) {
+          if (
+            examContainer.style.display === "block" &&
+            sessionStorage.getItem("isLoggedIn") === "true"
+          ) {
+            autoSubmitScore();
+          }
+        });
+      });
+
+      const questions = [
+        {
+          id: 1,
+          question:
+            "10 mm Hg চাপে CO₂ গ্যাসের সংকোচনশীলতা গুণাঙ্ক (Z) এর মান কত?",
+          options: {
+            A: "2.0",
+            B: "1.5",
+            C: "1.0",
+            D: "3.0",
+          },
+          correct: "C",
+          explanation:
+            "<p>সংকোচনশীলতা গুণাঙ্ক (Z) হলো Z = (PV/nRT)। আদর্শ গ্যাসের জন্য Z = 1। বাস্তব গ্যাসসমূহ আদর্শ গ্যাসের মতো আচরণ করে যখন চাপ খুব কম থাকে। 10 mm Hg চাপ খুবই কম একটি চাপ (প্রায় ০.০১ atm)। এই কম চাপে CO<sub>2</sub> গ্যাস প্রায় আদর্শ গ্যাসের মতো আচরণ করবে, তাই এর সংকোচনশীলতা গুণাঙ্ক (Z) এর মান ১ এর কাছাকাছি হবে।</p>",
+        },
+        {
+          id: 2,
+          question: "অ্যামাগাট বক্ররেখার মূলভিত্তি কোনটি?",
+          options: {
+            A: "V ∝ P⁻¹",
+            B: "V ∝ T",
+            C: "V ∝ P",
+            D: "P∝T",
+          },
+          correct: "A",
+          explanation:
+            "<p>অ্যামাগাট বক্ররেখা (Amagat's curves) হলো গ্যাসের আয়তন (V) বনাম চাপের (P) লেখচিত্র যা নির্দিষ্ট তাপমাত্রায় অঙ্কিত হয়। এই বক্ররেখাগুলো বয়েলের সূত্রের (V ∝ P⁻¹ বা PV = ধ্রুবক) আদর্শ আচরণ থেকে বাস্তব গ্যাসের বিচ্যুতির চিত্র তুলে ধরে। বয়েলের সূত্র অনুযায়ী, PV = ধ্রুবক, অর্থাৎ V এবং P ব্যস্তানুপাতিক (V ∝ P⁻¹)। অ্যামাগাট বক্ররেখা এই সম্পর্ককে ভিত্তি করে তৈরি করা হয়েছে, যেখানে PV বনাম P এর গ্রাফ আঁকা হয়।</p>",
+        },
+        {
+          id: 3,
+          question: "কোন গ্যাসটির 'a' এর মান সর্বোচ্চ?",
+          options: {
+            A: "CO₂",
+            B: "Cl₂",
+            C: "Ar",
+            D: "O₂",
+          },
+          correct: "B",
+          explanation:
+            "<p>ভ্যান্ডার ওয়ালস সমীকরণে ধ্রুবক 'a' আন্তঃআণবিক আকর্ষণ বলের তীব্রতার পরিমাপক। যে গ্যাসের অণুগুলির মধ্যে আকর্ষণ বল যত বেশি, 'a' এর মান তত বেশি হবে। সাধারণত, বড় এবং বেশি পোলারাইজযোগ্য অণুগুলির মধ্যে আন্তঃআণবিক আকর্ষণ বল বেশি হয়।</p><ul><li>CO₂ (কার্বন ডাই অক্সাইড): অণুর আকার এবং পোলারাইজযোগ্যতা মাঝারি।</li><li>Cl₂ (ক্লোরিন): বড় অণু এবং তুলনামূলকভাবে বেশি পোলারাইজযোগ্য, তাই এর আকর্ষণ বল বেশি।</li><li>Ar (আর্গন): ছোট অণু, নিষ্ক্রিয় গ্যাস, দুর্বল আন্তঃআণবিক আকর্ষণ।</li><li>O₂ (অক্সিজেন): ছোট অণু, তুলনামূলকভাবে কম পোলারাইজযোগ্য।</li></ul><p>এই গ্যাসগুলির মধ্যে Cl₂ এর অণুর আকার সবচেয়ে বড় এবং এটি বেশি পোলারাইজযোগ্য, তাই এর আন্তঃআণবিক আকর্ষণ বল এবং ফলস্বরূপ 'a' এর মান সর্বোচ্চ হবে।</p>",
+        },
+        {
+          id: 4,
+          question:
+            "নির্দিষ্ট ওজনের একটি আদর্শ গ্যাসের ক্ষমতা নির্ভর করে তার কোন বৈশিষ্ট্যের উপর?",
+          options: {
+            A: "আয়তন",
+            B: "তাপমাত্রা",
+            C: "ঘনত্ব",
+            D: "চাপ",
+          },
+          correct: "B",
+          explanation:
+            "<p>আদর্শ গ্যাসের অভ্যন্তরীণ শক্তি (বা ক্ষমতা, যদি শক্তি বোঝানো হয়) শুধুমাত্র তার পরম তাপমাত্রার উপর নির্ভর করে। গ্যাসের গতিতত্ত্ব অনুযায়ী, গ্যাসের অণুগুলির গতিশক্তিই তার অভ্যন্তরীণ শক্তি, এবং এই গতিশক্তি সরাসরি তাপমাত্রার সমানুপাতিক। চাপ, আয়তন বা ঘনত্ব পরিবর্তন হলেও যদি তাপমাত্রা স্থির থাকে, তাহলে আদর্শ গ্যাসের অভ্যন্তরীণ শক্তি অপরিবর্তিত থাকে।</p>",
+        },
+        {
+          id: 5,
+          question: "বাস্তব গ্যাস বয়েলের সূত্র মেনে চলে-",
+          options: {
+            A: "নিম্ন তাপমাত্রায়",
+            B: "কক্ষ তাপমাত্রায়",
+            C: "0°C তাপমাত্রায়",
+            D: "খুব উচ্চ তাপমাত্রায়",
+          },
+          correct: "D",
+          explanation:
+            "<p>বাস্তব গ্যাসগুলি আদর্শ গ্যাসের আচরণ থেকে বিচ্যুত হয় কারণ তাদের অণুগুলির নিজস্ব আয়তন থাকে এবং তাদের মধ্যে আন্তঃআণবিক আকর্ষণ বল থাকে। বয়েলের সূত্র (PV = ধ্রুবক) আদর্শ গ্যাসের জন্য প্রযোজ্য। বাস্তব গ্যাসগুলি আদর্শ গ্যাসের মতো আচরণ করে যখন আন্তঃআণবিক আকর্ষণ বল নগণ্য হয় এবং অণুগুলির নিজস্ব আয়তন মোট আয়তনের তুলনায় উপেক্ষণীয় হয়। এটি সাধারণত খুব উচ্চ তাপমাত্রায় এবং নিম্ন চাপে ঘটে। উচ্চ তাপমাত্রায় অণুগুলির গতিশক্তি এত বেশি থাকে যে আন্তঃআণবিক আকর্ষণ বলের প্রভাব উপেক্ষণীয় হয়।</p>",
+        },
+        {
+          id: 6,
+          question: "আদর্শ গ্যাস সমীকরণ কোনটি?",
+          options: {
+            A: "PV = nRT",
+            B: "PV = (1/3)mNc²",
+            C: "PV = RT",
+            D: "P₁V₁ = P₂V₂",
+          },
+          correct: "A",
+          explanation:
+            "<p>আদর্শ গ্যাস সমীকরণটি হলো PV = nRT, যেখানে P হলো চাপ, V হলো আয়তন, n হলো গ্যাসের মোল সংখ্যা, R হলো আদর্শ গ্যাস ধ্রুবক, এবং T হলো পরম তাপমাত্রা। এটি বয়েলের সূত্র, চার্লসের সূত্র এবং অ্যাভোগ্যাড্রো সূত্রকে একত্রিত করে।</p>",
+        },
+        {
+          id: 7,
+          question: "কোন গ্যাসটির পেষণ গুণাঙ্কের মান সবচেয়ে বেশি?",
+          options: {
+            A: "H₂",
+            B: "N₂",
+            C: "O₂",
+            D: "CO₂",
+          },
+          correct: "A",
+          explanation:
+            "<p>এখানে 'পেষণ গুণাঙ্ক' বলতে সম্ভবত সংকোচনশীলতা গুণাঙ্ক (Z) বোঝানো হয়েছে, যা বাস্তব গ্যাসের আদর্শ আচরণ থেকে বিচ্যুতির পরিমাপক। Z = PV/nRT।</p><p>উচ্চচাপ এবং নিম্ন তাপমাত্রায় বাস্তব গ্যাসগুলি আদর্শ আচরণ থেকে বিচ্যুত হয়। হাইড্রোজেন (H₂) এবং হিলিয়াম (He) এর মতো হালকা গ্যাসগুলির ক্ষেত্রে, অণুগুলির মধ্যে আকর্ষণ বল খুবই দুর্বল, এমনকি উচ্চচাপ এবং নিম্ন তাপমাত্রায়ও বিকর্ষণ বলের প্রভাব বেশি থাকে। ফলস্বরূপ, তাদের সংকোচনশীলতা গুণাঙ্ক (Z) সাধারণত ১ এর চেয়ে বেশি হয় (Z > 1), যা ইঙ্গিত করে যে তারা আদর্শ গ্যাসের চেয়ে কম সংকোচনযোগ্য। অন্যান্য গ্যাসগুলির (N₂, O₂, CO₂) ক্ষেত্রে, নিম্নচাপে Z < 1 হয় এবং উচ্চচাপে Z > 1 হয়। কিন্তু সাধারণত H₂ এর Z এর মান বেশি থাকে।</p>",
+        },
+        {
+          id: 8,
+          question: "কোন গ্যাসটি অধিক পেষণযোগ্য?",
+          options: {
+            A: "H₂",
+            B: "He",
+            C: "O₂",
+            D: "CO₂",
+          },
+          correct: "D",
+          explanation:
+            "<p>'পেষণযোগ্য' বলতে সংকোচনযোগ্যতা বোঝানো হয়েছে। যে গ্যাসের সংকোচনশীলতা গুণাঙ্ক (Z) এর মান ১ এর চেয়ে কম (Z < 1), সেটি আদর্শ গ্যাসের চেয়ে বেশি পেষণযোগ্য। Z < 1 হওয়ার কারণ হলো আন্তঃআণবিক আকর্ষণ বলের প্রভাব। যে গ্যাসের অণুগুলির মধ্যে আকর্ষণ বল যত বেশি হবে, সেটি তত বেশি সহজে সংকুচিত হবে, অর্থাৎ অধিক পেষণযোগ্য হবে।</p><p>এই গ্যাসগুলির মধ্যে:</p><ul><li>H₂ এবং He খুব হালকা এবং এদের আন্তঃআণবিক আকর্ষণ বল খুবই দুর্বল, তাই এদের Z সাধারণত > 1 হয়।</li><li>O₂ এর তুলনায় CO₂ এর অণুগুলি বড় এবং বেশি পোলারাইজযোগ্য, তাই CO₂ এর অণুগুলির মধ্যে আকর্ষণ বল O₂ এর চেয়ে বেশি।</li></ul><p>CO₂ এর আন্তঃআণবিক আকর্ষণ বল অন্যান্য বিকল্পগুলির তুলনায় বেশি, তাই এটি অধিক পেষণযোগ্য হবে, বিশেষ করে কম তাপমাত্রায় এবং মধ্যম চাপে।</p>",
+        },
+        {
+          id: 9,
+          question: "ভ্যান্ডার ওয়ালস সমীকরণের ধ্রুবক ‘a’ দ্বারা বুঝায়-",
+          options: {
+            A: "গ্যাসের গতিশক্তি",
+            B: "আন্তঃআণবিক আকর্ষণ",
+            C: "গ্যাসের আয়তন",
+            D: "আন্তঃআণবিক বিকর্ষণ",
+          },
+          correct: "B",
+          explanation:
+            "<p>ভ্যান্ডার ওয়ালস সমীকরণে দুটি প্রধান ধ্রুবক রয়েছে: 'a' এবং 'b'।</p><ul><li>ধ্রুবক 'a' গ্যাসের অণুগুলির মধ্যেকার আন্তঃআণবিক আকর্ষণ বলের তীব্রতার পরিমাপক। এটি গ্যাসের চাপের সংশোধনে ব্যবহৃত হয়।</li><li>ধ্রুবক 'b' গ্যাসের অণুগুলির নিজস্ব আয়তন বা কার্যকর আয়তনের পরিমাপক। এটি গ্যাসের আয়তনের সংশোধনে ব্যবহৃত হয়।</li></ul><p>সুতরাং, 'a' দ্বারা আন্তঃআণবিক আকর্ষণ বোঝানো হয়।</p>",
+        },
+        {
+          id: 10,
+          question:
+            "PV = nRT সমীকরণ থেকে নিয়ে কোন সমীকরণটিকে প্রতিষ্ঠিত করা যায়?",
+          options: {
+            A: "d = PM/RT",
+            B: "d = PMT/R",
+            C: "d = PM/RT",
+            D: "d = PT/RM",
+          },
+          correct: "A",
+          explanation:
+            "<p>আদর্শ গ্যাস সমীকরণ হলো PV = nRT।</p><p>এখানে, n (মোল সংখ্যা) = m/M (ভর/আণবিক ভর)।</p><p>তাহলে, PV = (m/M)RT</p><p>বা, P = (m/V) (RT/M)</p><p>আমরা জানি, ঘনত্ব (d) = ভর/আয়তন = m/V।</p><p>সুতরাং, P = d(RT/M)</p><p>বা, d = (PM/RT)।</p><p>বিকল্প (a) এবং (c) একই, এবং এটিই সঠিক।</p>",
+        },
+        {
+          id: 11,
+          question:
+            "আদর্শ গ্যাসের ক্ষেত্রে প্রতি লিটার আয়তনে গ্যাসের মোল সংখ্যাকে P, T ও R এর মাধ্যমে প্রকাশ করলে এ মান হবে-",
+          options: {
+            A: "P/RT",
+            B: "PRT",
+            C: "PT/R",
+            D: "RT/P",
+          },
+          correct: "A",
+          explanation:
+            "<p>আদর্শ গ্যাস সমীকরণ হলো PV = nRT।</p><p>আমাদের প্রতি লিটার আয়তনে গ্যাসের মোল সংখ্যা (n/V) বের করতে হবে।</p><p>PV = nRT</p><p>P = (n/V)RT</p><p>n/V = P/RT</p><p>সুতরাং, প্রতি লিটার আয়তনে গ্যাসের মোল সংখ্যা P/RT হবে।</p>",
+        },
+        {
+          id: 12,
+          question: "আদর্শ গ্যাসের আচরণ থেকে বিচ্যুতির ক্রম কোনটি?",
+          options: {
+            A: "H₂ < N₂ < CO₂ < NH₃",
+            B: "H₂ < N₂ < NH₃ < CO₂",
+            C: "N₂ > H₂ > CO₂ > NH₃",
+            D: "N₂ > H₂ > NH₃ > CO₂",
+          },
+          correct: "A",
+          explanation:
+            "<p>বাস্তব গ্যাসের আদর্শ আচরণ থেকে বিচ্যুতির প্রধান কারণগুলি হলো: ১) অণুগুলির নিজস্ব আয়তন এবং ২) অণুগুলির মধ্যেকার আন্তঃআণবিক আকর্ষণ বল। যে গ্যাসের অণুগুলির আকার যত বড় এবং পোলারাইজযোগ্যতা যত বেশি, বা যে গ্যাস যত বেশি পোলার, তার আন্তঃআণবিক আকর্ষণ বল তত বেশি এবং আদর্শ আচরণ থেকে বিচ্যুতি তত বেশি।</p><ul><li>H₂: সবচেয়ে হালকা, দুর্বল আকর্ষণ। বিচ্যুতি সবচেয়ে কম।</li><li>N₂: তুলনামূলকভাবে হালকা, দুর্বল আকর্ষণ। H₂ এর চেয়ে বেশি বিচ্যুতি।</li><li>CO₂: তুলনামূলকভাবে বড় অণু, কিছুটা পোলারাইজযোগ্য। N₂ এর চেয়ে বেশি বিচ্যুতি।</li><li>NH₃: পোলার অণু (হাইড্রোজেন বন্ধন গঠন করে)। আন্তঃআণবিক আকর্ষণ বল সবচেয়ে বেশি। বিচ্যুতি সবচেয়ে বেশি।</li></ul><p>সুতরাং, বিচ্যুতির ক্রম হবে: H₂ < N₂ < CO₂ < NH₃।</p>",
+        },
+        {
+          id: 13,
+          question: "আদর্শ গ্যাসের সংকোচনশীলতা গুণাঙ্ক, Z এর মান কোনটি?",
+          options: {
+            A: "3.0",
+            B: "2.0",
+            C: "1.0",
+            D: "0.5",
+          },
+          correct: "C",
+          explanation:
+            "<p>সংকোচনশীলতা গুণাঙ্ক (Z) হলো Z = (PV/nRT)। আদর্শ গ্যাসের ক্ষেত্রে, PV = nRT, তাই Z এর মান সর্বদা ১ হয়। বাস্তব গ্যাসের ক্ষেত্রে Z এর মান ১ এর কম বা বেশি হতে পারে, যা আদর্শ আচরণ থেকে বিচ্যুতির নির্দেশক।</p>",
+        },
+        {
+          id: 14,
+          question: "নিচের কোন গ্যাসটির সংকোচনশীলতা গুণাঙ্ক, Z > 1 হয়?",
+          options: {
+            A: "H₂",
+            B: "Cl₂",
+            C: "CO₂",
+            D: "NH₃",
+          },
+          correct: "A",
+          explanation:
+            "<p>সাধারণত, খুব হালকা গ্যাস যেমন হাইড্রোজেন (H₂) এবং হিলিয়াম (He) এর ক্ষেত্রে, এমনকি সাধারণ তাপমাত্রায়ও বিকর্ষণ বলের প্রভাব আকর্ষণ বলের চেয়ে বেশি হয়, যার ফলে তাদের সংকোচনশীলতা গুণাঙ্ক (Z) এর মান ১ এর চেয়ে বেশি হয় (Z > 1)। এর অর্থ হলো এই গ্যাসগুলি আদর্শ গ্যাসের চেয়ে কম সংকোচনযোগ্য। অন্যান্য গ্যাসগুলির (Cl₂, CO₂, NH₃) ক্ষেত্রে, নিম্নচাপে এবং নিম্ন তাপমাত্রায় Z < 1 হতে পারে, তবে উচ্চচাপে Z > 1 হয়। তবে H₂ এর Z > 1 হওয়া একটি বৈশিষ্ট্যগত দিক।</p>",
+        },
+        {
+          id: 15,
+          question: "নিচের কোন গ্যাসটির সংকোচনশীলতা গুণাঙ্ক, Z < 1 হয়?",
+          options: {
+            A: "H₂",
+            B: "He",
+            C: "CH₄",
+            D: "N₂",
+          },
+          correct: "C",
+          explanation:
+            "<p>সংকোচনশীলতা গুণাঙ্ক (Z) এর মান ১ এর চেয়ে কম (Z < 1) হয় যখন গ্যাসের অণুগুলির মধ্যে আন্তঃআণবিক আকর্ষণ বলের প্রভাব বেশি থাকে এবং তা আদর্শ গ্যাসের চেয়ে বেশি সংকুচিত হয়।</p><ul><li>H₂ এবং He: খুব হালকা গ্যাস, আকর্ষণ বল নগণ্য, Z > 1 হয়।</li><li>N₂: তুলনামূলকভাবে হালকা, আকর্ষণ বল কম, Z প্রায় ১ এর কাছাকাছি বা ১ এর বেশি।</li><li>CH₄ (মিথেন): অণুগুলির আকার বড় এবং আকর্ষণ বল তুলনামূলকভাবে বেশি (H₂, He, N₂ এর তুলনায়), ফলে CH₄ এর Z < 1 হতে পারে, বিশেষ করে নিম্ন তাপমাত্রায় এবং মধ্যম চাপে।</li></ul><p>সুতরাং, CH₄ এর ক্ষেত্রে Z < 1 হওয়ার সম্ভাবনা বেশি।</p>",
+        },
+        {
+          id: 16,
+          question: "আদর্শ গ্যাসের ক্ষেত্রে (dE/dV)ₜ = ?",
+          options: {
+            A: "0",
+            B: "0.5",
+            C: "1",
+            D: "1.5",
+          },
+          correct: "A",
+          explanation:
+            "<p>আদর্শ গ্যাসের ক্ষেত্রে, অভ্যন্তরীণ শক্তি (E) শুধুমাত্র তাপমাত্রার (T) উপর নির্ভর করে এবং আয়তনের (V) উপর নির্ভরশীল নয়। এর কারণ হলো আদর্শ গ্যাসের অণুগুলির মধ্যে কোনো আন্তঃআণবিক আকর্ষণ বা বিকর্ষণ বল নেই, তাই আয়তন পরিবর্তন হলেও অণুগুলির পারস্পরিক অবস্থানের কারণে কোনো শক্তি পরিবর্তন হয় না। সুতরাং, স্থির তাপমাত্রায় আয়তনের সাপেক্ষে অভ্যন্তরীণ শক্তির পরিবর্তন শূন্য হয়: (∂E/∂V)<sub>T</sub> = 0। এটি জুল'স সূত্র নামেও পরিচিত।</p>",
+        },
+        {
+          id: 17,
+          question: "H₂ গ্যাস সাধারণ অবস্থায় কোন সমীকরণটি অনুসরণ করে?",
+          options: {
+            A: "PV = nRT",
+            B: "(P + n²a/V²)(V - nb) = nRT",
+            C: "PV = RT",
+            D: "কোনোটিই নয়",
+          },
+          correct: "A",
+          explanation:
+            "<p>সাধারণ অবস্থায় (যেমন কক্ষ তাপমাত্রা এবং প্রমাণ চাপ) H₂ গ্যাস আদর্শ গ্যাসের মতো আচরণ করে। অর্থাৎ, এই অবস্থায় H₂ গ্যাসের আচরণ বয়েলের সূত্র এবং চার্লসের সূত্রকে মোটামুটিভাবে মেনে চলে এবং এটিকে আদর্শ গ্যাস সমীকরণ PV = nRT দ্বারা বর্ণনা করা যায়। ভ্যান্ডার ওয়ালস সমীকরণ (b) হলো বাস্তব গ্যাসের জন্য, কিন্তু H₂ এর ক্ষেত্রে 'a' এবং 'b' এর মান খুবই ছোট হওয়ায় এটি সাধারণ অবস্থায় প্রায় আদর্শ আচরণ করে।</p>",
+        },
+        {
+          id: 18,
+          question: "নিচের কোনটি মোটামুটি আদর্শ গ্যাস?",
+          options: {
+            A: "He",
+            B: "H₂",
+            C: "CO₂",
+            D: "CH₄",
+          },
+          correct: "A",
+          explanation:
+            "<p>আদর্শ গ্যাসের বৈশিষ্ট্য হলো অণুগুলির নিজস্ব আয়তন নগণ্য এবং তাদের মধ্যে কোনো আন্তঃআণবিক আকর্ষণ বল নেই। এই বৈশিষ্ট্যগুলি যে গ্যাসগুলির মধ্যে সবচেয়ে বেশি পরিলক্ষিত হয়, সেগুলিকে মোটামুটি আদর্শ গ্যাস বলা হয়।</p><ul><li>He (হিলিয়াম) সবচেয়ে হালকা এবং ক্ষুদ্রতম অণুগুলির একটি, এবং এটি একটি নিষ্ক্রিয় গ্যাস, তাই এর আন্তঃআণবিক আকর্ষণ বল খুবই দুর্বল।</li><li>H₂ ও তুলনামূলকভাবে হালকা, তবে He এর চেয়ে আকর্ষণ বল বেশি।</li><li>CO₂ এবং CH₄ এর অণুগুলি তুলনামূলকভাবে বড় এবং এদের আকর্ষণ বলও বেশি, তাই এরা আদর্শ আচরণ থেকে বেশি বিচ্যুত হয়।</li></ul><p>অতএব, He কে মোটামুটি আদর্শ গ্যাস হিসেবে বিবেচনা করা হয়।</p>",
+        },
+        {
+          id: 19,
+          question:
+            "কোন তাপমাত্রায় বাস্তব গ্যাস আদর্শ গ্যাসের সমীকরণকে অনুসরণ করে একটি নির্দিষ্ট চাপের সীমার মধ্যে?",
+          options: {
+            A: "সন্ধি তাপমাত্রায়",
+            B: "পরমশূন্য তাপমাত্রায়",
+            C: "বয়েলের তাপমাত্রায়",
+            D: "উৎক্রম তাপমাত্রায়",
+          },
+          correct: "C",
+          explanation:
+            "<p>বয়েলের তাপমাত্রা (Boyle Temperature, T<sub>B</sub>) হলো সেই নির্দিষ্ট তাপমাত্রা যেখানে একটি বাস্তব গ্যাস চাপের একটি বিস্তৃত সীমার মধ্যে বয়েলের সূত্র (PV = ধ্রুবক) মোটামুটিভাবে মেনে চলে। এই তাপমাত্রায় আন্তঃআণবিক আকর্ষণ এবং বিকর্ষণ বলের প্রভাব একে অপরকে বাতিল করে দেয়, ফলে গ্যাস আদর্শ গ্যাসের মতো আচরণ করে। T<sub>B</sub> = a / (Rb), যেখানে 'a' এবং 'b' হলো ভ্যান্ডার ওয়ালস ধ্রুবক।</p>",
+        },
+        {
+          id: 20,
+          question: "H₂ ও He এর ক্ষেত্রে সংকোচনশীলতা গুণাঙ্ক Z-এর মান সাধারণত-",
+          options: {
+            A: "> 1",
+            B: "< 1",
+            C: "= 1",
+            D: "0",
+          },
+          correct: "A",
+          explanation:
+            "<p>হাইড্রোজেন (H₂) এবং হিলিয়াম (He) উভয়ই খুব হালকা গ্যাস এবং এদের অণুগুলির মধ্যে আকর্ষণ বল খুবই দুর্বল। এদের ক্ষেত্রে, বিশেষ করে সাধারণ তাপমাত্রা ও চাপে, অণুগুলির নিজস্ব আয়তনের প্রভাব (যা বিকর্ষণ বলের সাথে সম্পর্কিত) আন্তঃআণবিক আকর্ষণ বলের চেয়ে বেশি প্রাধান্য পায়। এর ফলে, এদের সংকোচনশীলতা গুণাঙ্ক (Z = PV/nRT) সাধারণত ১ এর চেয়ে বেশি হয় (Z > 1), যার অর্থ হলো এরা আদর্শ গ্যাসের চেয়ে কম সংকোচনযোগ্য।</p>",
+        },
+        {
+          id: 21,
+          question:
+            "নিচের কোন গ্যাসগুলোর ক্ষেত্রে STP তে 1 মোলের আয়তন 22.4 L হবে?",
+          options: {
+            A: "H₂O",
+            B: "CCl₄",
+            C: "He",
+            D: "CH₄",
+          },
+          correct: "C",
+          explanation:
+            "<p>STP (প্রমাণ তাপমাত্রা ও চাপ) তে, আদর্শ গ্যাসের ১ মোল ২২.৪ লিটার আয়তন দখল করে। বাস্তব গ্যাসগুলি আদর্শ আচরণ থেকে বিচ্যুত হয়। যে গ্যাসগুলি আদর্শ গ্যাসের মতো আচরণ করে, তাদের ক্ষেত্রে এই নিয়ম প্রযোজ্য।</p><ul><li>H₂O (জলীয় বাষ্প) এবং CCl₄ (কার্বন টেট্রাক্লোরাইড) এই তাপমাত্রায় গ্যাসীয় অবস্থায় থাকে না (জলীয় বাষ্পের ক্ষেত্রে STP-তে ঘনীভূত হয়ে তরল হয়, CCl₄ তরল)।</li><li>CH₄ (মিথেন) একটি বাস্তব গ্যাস, যা STP তে কিছুটা বিচ্যুতি দেখায়, তবে আদর্শ গ্যাসের কাছাকাছি আচরণ করে।</li><li>He (হিলিয়াম) একটি নিষ্ক্রিয় গ্যাস এবং সবচেয়ে হালকা অণুগুলির মধ্যে একটি, যা আদর্শ গ্যাসের আচরণের সবচেয়ে কাছাকাছি। তাই, STP তে ১ মোল He এর আয়তন ২২.৪ L এর খুব কাছাকাছি হবে।</li></ul><p>সুতরাং, He এর ক্ষেত্রেই এই শর্ত প্রযোজ্য।</p>",
+        },
+        {
+          id: 22,
+          question: "নিচের কোনটি বয়েলের সূত্র মোটামুটিভাবে মেনে চলে?",
+          options: {
+            A: "NH₃",
+            B: "H₂S",
+            C: "SO₃",
+            D: "Ne",
+          },
+          correct: "D",
+          explanation:
+            "<p>বয়েলের সূত্র আদর্শ গ্যাসের জন্য প্রযোজ্য। যে গ্যাসগুলি আদর্শ গ্যাসের আচরণের কাছাকাছি, সেগুলি বয়েলের সূত্র মোটামুটিভাবে মেনে চলে। আদর্শ গ্যাসের আচরণ থেকে বিচ্যুতির কারণ হলো আন্তঃআণবিক আকর্ষণ বল এবং অণুগুলির নিজস্ব আয়তন।</p><ul><li>NH₃ (অ্যামোনিয়া), H₂S (হাইড্রোজেন সালফাইড), এবং SO₃ (সালফার ট্রাইঅক্সাইড) এই গ্যাসগুলির অণুগুলি পোলার বা তুলনামূলকভাবে বড়, ফলে এদের মধ্যে শক্তিশালী আন্তঃআণবিক আকর্ষণ বল থাকে, যা বয়েলের সূত্র থেকে উল্লেখযোগ্য বিচ্যুতি ঘটায়।</li><li>Ne (নিয়ন) একটি নিষ্ক্রিয় গ্যাস এবং এর অণুগুলি ছোট ও এদের মধ্যে আকর্ষণ বল খুবই দুর্বল। তাই নিয়ন বয়েলের সূত্র মোটামুটিভাবে মেনে চলে এবং আদর্শ গ্যাসের কাছাকাছি আচরণ করে।</li></ul>",
+        },
+        {
+          id: 23,
+          question:
+            "নিম্নের কোনটি আদর্শ গ্যাসের ধর্ম থেকে বাস্তব গ্যাসের বিচ্যুতির কারণ?",
+          options: {
+            A: "বাস্তব গ্যাসের ওজনজনিত ত্রুটি",
+            B: "বাস্তব গ্যাসের ভরজনিত ত্রুটি",
+            C: "বাস্তব গ্যাসের আয়তনজনিত ত্রুটি",
+            D: "বাস্তব গ্যাসের উপাদানজনিত ত্রুটি",
+          },
+          correct: "C",
+          explanation:
+            "<p>আদর্শ গ্যাস মডেলে দুটি প্রধান অনুমান করা হয়: ১) গ্যাস অণুগুলির নিজস্ব আয়তন নগণ্য এবং ২) অণুগুলির মধ্যে কোনো আন্তঃআণবিক আকর্ষণ বল নেই। বাস্তব গ্যাসগুলি এই দুটি অনুমান থেকে বিচ্যুত হয়। ভ্যান্ডার ওয়ালস সমীকরণে এই বিচ্যুতিগুলি সংশোধিত হয়। 'বাস্তব গ্যাসের আয়তনজনিত ত্রুটি' বলতে অণুগুলির নিজস্ব আয়তনকে বোঝানো হয়েছে, যা আদর্শ গ্যাসের ধর্ম থেকে বিচ্যুতির অন্যতম কারণ।</p>",
+        },
+        {
+          id: 24,
+          question: "নিচের কোন ক্ষেত্রে বয়েলের সূত্র প্রযোজ্য নয়?",
+          options: {
+            A: "উচ্চ তাপমাত্রা, নিম্ন চাপ",
+            B: "উচ্চ তাপমাত্রা, উচ্চ চাপ",
+            C: "নিম্ন তাপমাত্রা, উচ্চ চাপ",
+            D: "নিম্ন তাপমাত্রা, নিম্ন চাপ",
+          },
+          correct: "C",
+          explanation:
+            "<p>বয়েলের সূত্র (PV = ধ্রুবক) আদর্শ গ্যাসের জন্য প্রযোজ্য। বাস্তব গ্যাসগুলি আদর্শ গ্যাসের মতো আচরণ করে যখন আন্তঃআণবিক আকর্ষণ বল এবং অণুগুলির নিজস্ব আয়তন উপেক্ষণীয় হয়। এই শর্তগুলি সাধারণত উচ্চ তাপমাত্রা এবং নিম্ন চাপে পূরণ হয়।</p><p>নিম্ন তাপমাত্রায় এবং উচ্চ চাপে, অণুগুলি একে অপরের কাছাকাছি আসে এবং তাদের মধ্যে আন্তঃআণবিক আকর্ষণ বল এবং নিজস্ব আয়তন উল্লেখযোগ্য হয়ে ওঠে। এই অবস্থায়, বাস্তব গ্যাসগুলি বয়েলের সূত্র থেকে সবচেয়ে বেশি বিচ্যুত হয়, অর্থাৎ এই ক্ষেত্রে বয়েলের সূত্র প্রযোজ্য নয়।</p>",
+        },
+        {
+          id: 25,
+          question:
+            "প্রমাণ অবস্থায় কোনো গ্যাসের সংকোচনশীলতা গুণকের মান 1 অপেক্ষা ছোট। সুতরাং-",
+          options: {
+            A: "Vₘ > 22.4 L",
+            B: "Vₘ < 22.4 L",
+            C: "Vₘ = 22.4 L",
+            D: "Vₘ = 44.8 L",
+          },
+          correct: "B",
+          explanation:
+            "<p>সংকোচনশীলতা গুণাঙ্ক (Z) হলো Z = (PV<sub>m</sub>/RT) বা Z = (বাস্তব গ্যাসের মোলার আয়তন/আদর্শ গ্যাসের মোলার আয়তন)।</p><p>প্রমাণ অবস্থায় (STP) আদর্শ গ্যাসের মোলার আয়তন ২২.৪ L।</p><p>যদি Z < 1 হয়, তাহলে এর অর্থ হলো বাস্তব গ্যাসের মোলার আয়তন আদর্শ গ্যাসের মোলার আয়তনের চেয়ে কম। অর্থাৎ, V<sub>m</sub> < 22.4 L। এটি ঘটে যখন আন্তঃআণবিক আকর্ষণ বল বেশি প্রাধান্য পায়, যা গ্যাসকে আদর্শ গ্যাসের চেয়ে বেশি সংকুচিত করে।</p>",
+        },
+        {
+          id: 26,
+          question:
+            "নিচের সমীকরণগুলোর মধ্যে কোন ক্ষেত্রে সংশ্লিষ্ট সমীকরণ মেনে চলা গ্যাসকে তরল করা সম্ভব নয়?",
+          options: {
+            A: "(P + a/V²)(V – b) = RT",
+            B: "P(V – b) = RT",
+            C: "(P + a/V²)V = RT",
+            D: "(P + a/V²)(V – b) = 2RT",
+          },
+          correct: "B",
+          explanation:
+            "<p>একটি গ্যাসকে তরল করা সম্ভব হয় যখন তার অণুগুলির মধ্যে যথেষ্ট আন্তঃআণবিক আকর্ষণ বল থাকে। ভ্যান্ডার ওয়ালস সমীকরণে, ধ্রুবক 'a' আন্তঃআণবিক আকর্ষণ বলের পরিমাপক।</p><ul><li>সমীকরণ (a) এবং (d) হলো ভ্যান্ডার ওয়ালস সমীকরণের রূপ, যেখানে 'a' পদটি উপস্থিত, যা আন্তঃআণবিক আকর্ষণ বলকে নির্দেশ করে।</li><li>সমীকরণ (c) তে 'a' পদটি উপস্থিত, যা আকর্ষণ বলকে নির্দেশ করে।</li><li>সমীকরণ (b) হলো P(V – b) = RT। এই সমীকরণে 'a' পদটি অনুপস্থিত, যার অর্থ হলো এই সমীকরণে আন্তঃআণবিক আকর্ষণ বলের কোনো প্রভাব বিবেচনা করা হয়নি। যদি গ্যাসের অণুগুলির মধ্যে কোনো আকর্ষণ বল না থাকে, তাহলে সেই গ্যাসকে তরল করা সম্ভব নয়, কারণ তরলীকরণের জন্য অণুগুলির একে অপরের প্রতি আকর্ষণ থাকতে হয়।</li></ul><p>সুতরাং, P(V – b) = RT সমীকরণ মেনে চলা গ্যাসকে তরল করা সম্ভব নয়।</p>",
+        },
+      ];
+
+      const totalQuestions = questions.length;
+      let timeLeft = Math.floor(totalQuestions / 2) * 60;
+      const timerElement = document.getElementById("timer");
+      let timerInterval;
+
+      function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.innerText = `${toBengaliNumber(
+          minutes
+        )} মিনিট ${toBengaliNumber(seconds)} সেকেন্ড`;
+
+        if (timeLeft > 0) {
+          timeLeft--;
+        } else {
+          stopTimer();
+          confirmSubmit();
+        }
+      }
+
+      function startTimer() {
+        console.log("Starting timer");
+        timerElement.innerText = `${toBengaliNumber(
+          Math.floor(timeLeft / 60)
+        )} মিনিট ${toBengaliNumber(timeLeft % 60)} সেকেন্ড`;
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        console.log("Timer stopped");
+      }
+
+      function toBengaliNumber(num) {
+        const bengaliDigits = [
+          "০",
+          "১",
+          "২",
+          "৩",
+          "৪",
+          "৫",
+          "৬",
+          "৭",
+          "৮",
+          "৯",
+        ];
+        let numStr = num.toString();
+
+        let isNegative = num < 0;
+        if (isNegative) {
+          numStr = numStr.substring(1);
+        }
+
+        if (numStr.includes(".")) {
+          let [integerPart, decimalPart] = numStr.split(".");
+          let integerBengali = integerPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          let decimalBengali = decimalPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (
+            (isNegative ? "−" : "") + integerBengali + "." + decimalBengali
+          );
+        } else {
+          let integerBengali = numStr
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (isNegative ? "−" : "") + integerBengali;
+        }
+      }
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function generateQuestions() {
+        console.log("Generating questions");
+        const examContainer = document.querySelector("#exam");
+        if (!examContainer) {
+          console.error("Exam container (#exam) not found!");
+          return;
+        }
+        examContainer.innerHTML = "";
+        console.log("Questions array:", questions);
+        const shuffledQuestions = shuffleArray([...questions]);
+        shuffledQuestions.forEach((question, index) => {
+          console.log(`Generating question ${index + 1}:`, question);
+          const questionDiv = document.createElement("div");
+          questionDiv.classList.add("question-container");
+          questionDiv.setAttribute("data-question", question.id);
+          questionDiv.setAttribute("data-correct", question.correct);
+
+          let optionsHTML = "";
+          for (let option in question.options) {
+            optionsHTML += `
+                                              <label class="option" data-option="${option}">
+                                                <div class="circle">${option}</div>
+                                                <span class="option-text">${question.options[option]}</span>
+                                              </label>
+                                            `;
+          }
+
+          const explanationHTML = question.explanation
+            ? `<div class="explanation-dropdown">
+                                                 <button class="explanation-btn">ব্যাখ্যা দেখো</button>
+                                                 <div class="explanation-content">
+                                                   <div class="explanation-label">ব্যাখ্যা:</div>
+                                                   ${question.explanation}
+                                                 </div>
+                                               </div>`
+            : "";
+
+          questionDiv.innerHTML = `
+                                            <p class="question-label">${
+                                              index + 1
+                                            }. ${question.question}</p>
+                                            <div class="options">
+                                              ${optionsHTML}
+                                            </div>
+                                            ${explanationHTML}
+                                          `;
+          examContainer.appendChild(questionDiv);
+          console.log(`Appended question ${index + 1} to exam container`);
+        });
+
+        const questionContainers = document.querySelectorAll(
+          ".question-container"
+        );
+        console.log(`Found ${questionContainers.length} question containers`);
+        questionContainers.forEach((container, idx) => {
+          console.log(`Setting question ${idx + 1} to visible`);
+          container.style.display = "block";
+        });
+
+        document.querySelectorAll(".option").forEach((option) => {
+          option.addEventListener(
+            "click",
+            function (e) {
+              e.preventDefault();
+              const parent = this.closest(".question-container");
+              if (parent.classList.contains("locked")) return;
+              parent.classList.add("locked");
+              parent.querySelectorAll(".option").forEach((el) => {
+                if (el !== this) {
+                  el.style.pointerEvents = "none";
+                  el.style.cursor = "default";
+                }
+                el.classList.remove("selected");
+              });
+              this.classList.add("selected");
+              console.log(
+                `Option selected for question ${parent.getAttribute(
+                  "data-question"
+                )}: ${this.getAttribute("data-option")}`
+              );
+            },
+            { once: true }
+          );
+        });
+
+        document.querySelectorAll(".explanation-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const content = this.nextElementSibling;
+            content.classList.toggle("visible");
+            this.classList.toggle("active");
+            console.log("Toggled explanation visibility");
+          });
+        });
+
+        const examInfo = document.getElementById("exam-info");
+        if (examInfo) {
+          examInfo.innerText = `পূর্ণ নম্বরঃ ${toBengaliNumber(
+            totalQuestions
+          )}`;
+          console.log("Exam info updated");
+        } else {
+          console.error("Exam info element not found!");
+        }
+      }
+
+      function initializeChart() {
+        console.log("Initializing chart");
+        const ctx = document.getElementById("scoreChart").getContext("2d");
+        chartInstance = new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: ["ঠিক উত্তর", "ভুল উত্তর", "অনুত্তরিত"],
+            datasets: [
+              {
+                data: [0, 0, 0],
+                backgroundColor: ["#34c759", "#ff3b30", "#007aff"],
+                borderColor: "#fff",
+                borderWidth: 2,
+                hoverOffset: 10,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "10%",
+            layout: {
+              padding: 10,
+            },
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  font: {
+                    family: '"Hind Siliguri", sans-serif',
+                    size: 13,
+                    weight: "bold",
+                  },
+                  color: "#333",
+                  padding: 12,
+                  boxWidth: 14,
+                  generateLabels: (chart) => {
+                    const data = chart.data;
+                    return data.labels.map((label, i) => ({
+                      text: label,
+                      font: {
+                        family: '"Hind Siliguri", sans-serif',
+                      },
+                      fillStyle: data.datasets[0].backgroundColor[i],
+                      hidden: !chart.getDataVisibility(i),
+                      index: i,
+                    }));
+                  },
+                },
+              },
+              tooltip: {
+                backgroundColor: "rgba(0, 0, 0, 0.9)",
+                cornerRadius: 6,
+                titleFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 14,
+                  weight: "bold",
+                },
+                bodyFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 13,
+                },
+                padding: 10,
+                boxPadding: 5,
+              },
+            },
+            animation: {
+              animateScale: true,
+              animateRotate: true,
+              duration: 1000,
+              easing: "easeOutQuart",
+            },
+            elements: {
+              arc: {
+                borderRadius: 8,
+              },
+            },
+            onClick: (e, elements) => {
+              if (elements.length > 0) {
+                const index = elements[0].index;
+                const filter = ["correct", "wrong", "unanswered"][index];
+                filterQuestions(filter);
+              } else {
+                filterQuestions("all");
+              }
+            },
+          },
+        });
+        console.log("Chart initialized");
+      }
+
+      function filterQuestions(type) {
+        console.log(`Filtering questions by type: ${type}`);
+        document.querySelectorAll(".question-container").forEach((question) => {
+          const status = question.getAttribute("data-status");
+          if (type === "all" || status === type) {
+            question.style.display = "block";
+          } else {
+            question.style.display = "none";
+          }
+        });
+      }
+
+      function showConfirmPopup() {
+        console.log("Showing confirm popup");
+        document.getElementById("confirmPopup").style.display = "block";
+      }
+
+      function autoSubmitScore() {
+        console.log("Auto-submitting score");
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document.querySelectorAll(".question-container").forEach((question) => {
+          let correctAnswer = question.getAttribute("data-correct");
+          let selectedOption = question.querySelector(".option.selected");
+
+          if (selectedOption) {
+            answered++;
+            let chosenAnswer = selectedOption.getAttribute("data-option");
+            if (chosenAnswer === correctAnswer) {
+              score += 1;
+              correct++;
+              question.setAttribute("data-status", "correct");
+            } else {
+              score -= 0.25;
+              wrong++;
+              question.setAttribute("data-status", "wrong");
+            }
+          } else {
+            unanswered++;
+            question.setAttribute("data-status", "unanswered");
+          }
+        });
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        const formData = new FormData();
+        formData.append("userID", userID);
+        formData.append("finalScore", score.toFixed(2));
+        formData.append("correctAnswers", correct);
+        formData.append("wrongAnswers", wrong);
+        formData.append("unanswered", unanswered);
+
+        const url = "https://formspree.io/f/xpwy";
+        navigator.sendBeacon(url, formData);
+        console.log("Auto-submission sent via sendBeacon for userID:", userID);
+      }
+
+      function confirmSubmit() {
+        console.log("Confirming submission");
+        document.getElementById("confirmPopup").style.display = "none";
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document
+          .querySelectorAll(".question-container")
+          .forEach((question, index) => {
+            let correctAnswer = question.getAttribute("data-correct");
+            let selectedOption = question.querySelector(".option.selected");
+
+            if (selectedOption) {
+              answered++;
+              let chosenAnswer = selectedOption.getAttribute("data-option");
+              if (chosenAnswer === correctAnswer) {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("correct-text");
+                score += 1;
+                correct++;
+                question.setAttribute("data-status", "correct");
+              } else {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("incorrect-text");
+                question
+                  .querySelector(
+                    `[data-option="${correctAnswer}"] .option-text`
+                  )
+                  .classList.add("correct-text");
+                score -= 0.25;
+                wrong++;
+                question.setAttribute("data-status", "wrong");
+              }
+            } else {
+              question
+                .querySelector(`[data-option="${correctAnswer}"] .option-text`)
+                .classList.add("unattempted-text");
+              unanswered++;
+              question.setAttribute("data-status", "unanswered");
+            }
+            question.style.display = "block";
+
+            const explanationDropdown = question.querySelector(
+              ".explanation-dropdown"
+            );
+            if (explanationDropdown) {
+              explanationDropdown.classList.add("visible");
+            }
+          });
+
+        const chartContainer = document.querySelector(".chart-container");
+        chartContainer.classList.add("visible");
+        if (!chartInstance) {
+          initializeChart();
+        }
+        chartInstance.data.datasets[0].data = [correct, wrong, unanswered];
+        chartInstance.update();
+        console.log("Chart updated with data:", [correct, wrong, unanswered]);
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        document.getElementById("totalQuestions").innerText =
+          toBengaliNumber(total);
+        document.getElementById("answered").innerText =
+          toBengaliNumber(answered);
+        document.getElementById("correctAnswers").innerText =
+          toBengaliNumber(correct);
+        document.getElementById("wrongAnswers").innerText =
+          toBengaliNumber(wrong);
+        document.getElementById("unanswered").innerText =
+          toBengaliNumber(unanswered);
+        document.getElementById("finalScore").innerText = toBengaliNumber(
+          score.toFixed(2)
+        );
+
+        document.getElementById("formUserID").value = userID;
+        document.getElementById("formFinalScore").value = score.toFixed(2);
+        document.getElementById("formCorrectAnswers").value = correct;
+        document.getElementById("formWrongAnswers").value = wrong;
+        document.getElementById("formUnanswered").value = unanswered;
+
+        document.getElementById("submitBtn").style.display = "none";
+
+        document.getElementById("scorePopup").style.display = "block";
+
+        const form = document.getElementById("scoreForm");
+        fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: {
+            Accept: "application/json",
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              console.log("Form submitted successfully");
+              form.reset();
+            } else {
+              console.error("Form submission failed:", response.statusText);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      function cancelSubmit() {
+        console.log("Canceling submission");
+        document.getElementById("confirmPopup").style.display = "none";
+      }
+
+      document
+        .getElementById("submitBtn")
+        .addEventListener("click", function () {
+          console.log("Submit button clicked");
+          showConfirmPopup();
+        });
+
+      function closePopup() {
+        console.log("Closing score popup");
+        const scorePopup = document.getElementById("scorePopup");
+        scorePopup.classList.add("slide-out");
+        setTimeout(() => {
+          scorePopup.style.display = "none";
+          scorePopup.classList.remove("slide-out");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 500);
+      }
+
+      document
+        .getElementById("scoreForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          console.log("Score form submitted");
+          closePopup();
+        });
+    </script>
+  </body>
+</html>
